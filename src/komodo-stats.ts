@@ -88,7 +88,7 @@ async function publishAlertCount() {
 export function startStatsPublisher() {
   client.on("reconnect", () => console.log("🔄 Reconnecting…"));
   client.on("error",   err => {
-    console.error("❌ MQTT Error:", err.message);
+    console.error("❌ MQTT Error:", err);
     client.end()
   });
   client.on("connect", () => {

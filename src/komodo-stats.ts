@@ -13,6 +13,8 @@ const komodo = KomodoClient(env.komodoUrl, {
 const client = mqtt.connect(env.mqttUrl, {
   username: env.mqttUser,
   password: env.mqttPass,
+  reconnectPeriod: 5_000,
+  connectTimeout: 5_000,
 });
 
 
@@ -84,6 +86,11 @@ async function publishAlertCount() {
 }
 
 export function startStatsPublisher() {
+  client.on("reconnect", () => console.log("🔄 Reconnecting…"));
+  client.on("error",   err => {
+    console.error("❌ MQTT Error:", err.message);
+    client.end()
+  });
   client.on("connect", () => {
     console.log("✅ Connected to MQTT broker");
 

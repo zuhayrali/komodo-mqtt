@@ -100,7 +100,6 @@ async function publishAlertSummary(unresolvedAlerts: any[]) {
           level: alertSummary.level,
           timestamp: new Date(alertSummary.ts).toLocaleString(),
           type: alertSummary.data?.type,
-          name: alertSummary.data?.data?.name,
         };
 
         console.table([flatSummary]);

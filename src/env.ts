@@ -8,4 +8,5 @@ export const env = {
   mqttUrl: process.env.MQTT_URL!,
   mqttUser: process.env.MQTT_USER!,
   mqttPass: process.env.MQTT_PASS!,
+  updateInterval: process.env.UPDATE_INTERVAL!
 };

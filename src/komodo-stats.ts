@@ -69,21 +69,59 @@ async function publishServerStats() {
 
 async function publishAlertCount() {
   const alerts = await komodo.read("ListAlerts", {});
-  const unresolvedAlerts = alerts.alerts.filter(alert => !alert.resolved)
+  const unresolvedAlerts = alerts.alerts.filter(alert => !alert.resolved);
   const alertCount = unresolvedAlerts.length;
 
-  if(alertCount > 0) { 
-    console.table(alerts.alerts.filter(alert => !alert.resolved))
+  if (alertCount > 0) {
+    await publishAlertSummary(unresolvedAlerts);
   }
 
-  client.publish(`komodo/activeAlerts`, JSON.stringify(alertCount), {
-        qos: 0,
-        retain: false,
-      });
-    
-  console.log(`Unresolved alert count: ${alertCount}`);
+  // Optional: Publish count to MQTT
+  client.publish(`komodo/alert_summary/alert_count`, JSON.stringify(alertCount), {
+    qos: 0,
+    retain: false,
+  });
+
   return alertCount;
 }
+
+
+async function publishAlertSummary(unresolvedAlerts: any[]) {
+  const unresolvedAlertIds = unresolvedAlerts
+    .map(alert => (alert._id as { $oid: string }).$oid);
+
+  const unresolvedAlertSummaries = await Promise.all(
+    unresolvedAlertIds.map(async (id, index) => {
+      try {
+        const alertSummary = await komodo.read("GetAlert", { id });
+
+        const flatSummary = {
+          id,
+          level: alertSummary.level,
+          timestamp: new Date(alertSummary.ts).toLocaleString(),
+          type: alertSummary.data?.type,
+          name: alertSummary.data?.data?.name,
+        };
+
+        console.table([flatSummary]);
+
+        client.publish(`komodo/alert_summary/active/${index}`, JSON.stringify(alertSummary), {
+          qos: 0,
+          retain: false,
+        });
+
+        return flatSummary;
+
+      } catch (err) {
+        console.error(`❌ Failed to fetch alert summary for alert ${id}:`, err);
+        return null;
+      }
+    })
+  );
+
+  return unresolvedAlertSummaries.filter(Boolean);
+}
+
 
 export function startStatsPublisher() {
   client.on("reconnect", () => console.log("🔄 Reconnecting…"));
@@ -101,6 +139,6 @@ export function startStatsPublisher() {
       } catch (err) {
         console.error("❌ Error during stats fetch or publish:", err);
       }
-    }, 10_000);
+    }, (parseInt(env.updateInterval) * 1000));
   });
 }

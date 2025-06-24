@@ -1,20 +1,15 @@
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
-import { startStatsPublisher } from "./komodo-stats.js";
+import { startStatsPublisher } from "./stats-publisher.js";
 
 const app = new Hono()
 
-app.get('/', (c) => {
-  return c.text('Hello Hono!')
-})
-
 const server = serve({
   fetch: app.fetch,
-  port: 3002
+  port: 3434
 }, (info) => {
   startStatsPublisher();
   console.log(`Server is running on http://localhost:${info.port}`)
-
 })
 
 process.on("SIGINT", () => {

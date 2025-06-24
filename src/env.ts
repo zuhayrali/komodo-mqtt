@@ -1,12 +1,28 @@
 import dotenv from "dotenv";
 dotenv.config();
 
+function getRequiredEnvVar(key: string): string {
+  const value = process.env[key];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${key}`);
+  }
+  return value;
+}
+
+function getOptionalEnvVar(key: string, defaultValue: string): string {
+  return process.env[key] ?? defaultValue;
+}
+
 export const env = {
-  komodoUrl: process.env.KOMODO_URL!,
-  komodoKey: process.env.KOMODO_KEY!,
-  komodoSecret: process.env.KOMODO_SECRET!,
-  mqttUrl: process.env.MQTT_URL!,
-  mqttUser: process.env.MQTT_USER!,
-  mqttPass: process.env.MQTT_PASS!,
-  updateInterval: process.env.UPDATE_INTERVAL!
+  // Required
+  komodoUrl: getRequiredEnvVar("KOMODO_URL"),
+  komodoKey: getRequiredEnvVar("KOMODO_KEY"),
+  komodoSecret: getRequiredEnvVar("KOMODO_SECRET"),
+  mqttUrl: getRequiredEnvVar("MQTT_URL"),
+  mqttUser: getRequiredEnvVar("MQTT_USER"),
+  mqttPass: getRequiredEnvVar("MQTT_PASS"),
+
+  // Optional
+  updateInterval: parseInt(getOptionalEnvVar("UPDATE_INTERVAL", "10"), 10),
+  updateHomeAssistant: getOptionalEnvVar("UPDATE_HOME_ASSISTANT", "false") === "true"
 };

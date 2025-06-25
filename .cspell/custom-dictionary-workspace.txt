@@ -1,0 +1,6 @@
+# Custom Dictionary Words
+Komodo
+homeassistant
+zuhayrali
+ooga
+booga

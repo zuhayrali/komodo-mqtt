@@ -13,11 +13,16 @@ Send Komodo server information to MQTT for real-time server monitoring. Automati
 
 ---
 Server information is published to MQTT under the topic `komodo/servers/{server_name}` alongside any active alerts published to `komodo/alerts/batch`.
-!['MQTT Explorer'](docs/images/mqtt-explorer-example.png)
+
+<p align="center">
+  <img src="docs/images/mqtt-explorer-example.png" alt="MQTT Explorer">
+</p>
 
 Make use of published MQTT data through Home Assistant to view server status over time 
 
-!['Home Assistant Example](docs/images/homeassistant-charts.png)
+<p align="center">
+  <img src="docs/images/homeassistant-charts.png" alt="Home Assistant Example">
+</p>
 
 Each server exposes to MQTT: 
 - `cpu`: CPU usage %

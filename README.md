@@ -1,6 +1,6 @@
 # Komodo MQTT Integration
 
-Send Komodo server information to MQTT for real-time server monitoring. Automatic Home Assistant configuration is optional for users who want to make user of [MQTT Discovery](https://www.home-assistant.io/integrations/sensor.mqtt/#processing-unix-epoch-timestamps). You can already track server stats in the Komodo UI, this simply exposes those stats to MQTT ~~for making pretty graphs in Home Assistant~~ for any potential use. 
+Send Komodo server information to MQTT for real-time server monitoring. Automatic Home Assistant configuration is optional for users who want to make use of [MQTT Discovery](https://www.home-assistant.io/integrations/sensor.mqtt/#processing-unix-epoch-timestamps). You can already track server stats in the Komodo UI, this simply exposes those stats to MQTT ~~for making pretty graphs in Home Assistant~~ for any potential use. 
 
 ---
 
@@ -12,6 +12,9 @@ Send Komodo server information to MQTT for real-time server monitoring. Automati
 - Example Home Assistant automation included for sending notifications to a configured device 
 
 ---
+Server information is published to MQTT under the topic `komodo/servers/{server_name}` alongside any active alerts published to `komodo/alerts/batch`.
+!['MQTT Explorer'](docs/images/mqtt-explorer-example.png)
+
 Make use of published MQTT data through Home Assistant to view server status over time 
 
 !['Home Assistant Example](docs/images/homeassistant-charts.png)
@@ -21,21 +24,24 @@ Each server exposes to MQTT:
 - `memPercentage`: RAM usage %
 - `networkIn`: Network ingress (MB)
 - `networkOut`: Network egress (MB)
+- `state`: Status of the server (Ok/NotOK/Disabled)
+- `name`: Name of server as displayed in Komodo
 
 These can then be tracked as individual sensors in Home Assistant for historical data
 
-!['RAM Sensor Example'](docs/images/ram-sensor-example.png)
+<p align="center">
+  <img src="docs/images/ram-sensor-example.png" alt="RAM Sensor Example" width="75%">
+</p>
+Komodo alerts are published to MQTT, allowing push notifications to be sent through Home Assistant automations: 
 
-Notifications are published to MQTT, allowing notifications to be sent through Home Assistant automations: 
-
-!['Phone Notification Example 1'](docs/images/phone-notification-single-alert.jpg)
-
-!['Phone Notification Example 2'](docs/images/phone-notification-dual-alert.jpg)
-
+<p align="center">
+  <img src="docs/images/phone-notification-single-alert.jpg" alt="Phone Notification Example 1" width="49%" style="display:inline-block; margin-right: 1%;" />
+  <img src="docs/images/phone-notification-dual-alert.jpg" alt="Phone Notification Example 2" width="49%" style="display:inline-block;" />
+</p>
 
 
 ## 🔧 Prerequisites and Setup
-You will need to have a broker configured in Home Assistant already. If you want to make us the MQTT discovery feature, you must be able to write events to `homeassistant/sensor/*`. 
+You will need to have a broker configured in Home Assistant already. If you want to make use of the MQTT discovery feature, you must be able to write events to `homeassistant/sensor/*`. 
 
 ## 🐳 Docker
 
@@ -59,31 +65,21 @@ services:
       # - UPDATE_HOME_ASSISTANT=true # optional, when true, sensor values will be updated in homeassistant through MQTT discovery
 ```
 
-```env
-KOMODO_URL=https://komodo.example.com
-KOMODO_KEY=your_komodo_key
-KOMODO_SECRET=your_komodo_secret
+### Environment Variables
 
-MQTT_URL=mqtt://192.168.1.100:1883
-MQTT_USER=mqtt_user
-MQTT_PASS=mqtt_password
 
-UPDATE_INTERVAL=60
-UPDATE_HOME_ASSISTANT=false
-```
+| Variable              | Description                                                                | Required | Default | Example                      |
+|-----------------------|----------------------------------------------------------------------------|----------|---------|----------------------------  |
+| KOMODO_URL            | Your Komodo instance URL                                                   | y        | —       | `https://komodo.example.com` |
+| KOMODO_KEY            | Komodo API Key                                                             | y        | —       | your_komodo_key              |
+| KOMODO_SECRET         | Komodo Secret Key                                                          | y        | —       | your_komodo_secret           |
+| MQTT_URL              | URL of your MQTT broker                                                    | y        | —       | mqtt://192.168.1.100:1883    |
+| MQTT_USER             | Username for your MQTT broker                                              | y        | —       | mqtt_user                    |
+| MQTT_PASS             | Password for your MQTT broker                                              | y        | —       | mqtt_password                |
+| UPDATE_INTERVAL       | Interval in seconds between querying Komodo for updates                    | n        | 60      | 120                          |
+| UPDATE_HOME_ASSISTANT | Flag to send sensor data to Home Assistant via MQTT discovery (true/false) | n        | false   | true                         |
 
-| Variable                | Description                                                                                     | Required (y/n) | Default       |
-|-------------------------|-------------------------------------------------------------------------------------------------|----------|---------------|
-| `KOMODO_URL`            | Your Komodo instance URL                                                                        | y       | —             |
-| `KOMODO_KEY`            | Komodo API Key.                     | y       | —             |
-| `KOMODO_SECRET`         | Komodo Secret Key.                                      | y       | —             |
-| `MQTT_URL`              | URL of your MQTT broker                                                                         | y       | —             |
-| `MQTT_USER`             | Username for your MQTT broker                                                                   | y       | —             |
-| `MQTT_PASS`             | Password for your MQTT broker                                                                   | y       | —             |
-| `UPDATE_INTERVAL`       | Interval in seconds between querying Komodo for updates                                         | n       | `60`          |
-| `UPDATE_HOME_ASSISTANT`| Flag to send sensor data to Home Assistant via MQTT discovery (`true`/`false`)                  | n       | `false`       |
-
-After modifying your environment variables, start the container: `docker compose up -d` 
+After modifying your environment variables, start the container: `docker compose up -d`.  
 
 ---
 
@@ -111,6 +107,8 @@ docker pull ghcr.io/zuhayrali/komodo-mqtt@sha256:<digest>
 
 ## 🏠 Home Assistant Integration
 
+### Using MQTT Discovery
+
 If `UPDATE_HOME_ASSISTANT=true`, MQTT discovery messages are published under:
 
 ```
@@ -123,11 +121,13 @@ Metrics include:
 - `networkIn`: Network ingress (MB)
 - `networkOut`: Network egress (MB)
 
-For a server named `ooga` or `ooga booga`,you would have acccess to: 
+For a server named `ooga` you would have access to: 
 - `ooga_cpu`
 - `ooga_ram`
 - `ooga_net_in`
 - `ooga_net_out` 
+
+If your server name is separated by spaces, ex: `ooga booga`, then the MQTT sensor base name will be `ooga`.
 
 
 
@@ -146,7 +146,18 @@ For a server named `ooga` or `ooga booga`,you would have acccess to:
   },
   "unit_of_measurement": "%"
 }
+
 ```
+
+Created servers can be accessed as devices under MQTT in Home Assistant in the format `komodo_serverName`
+
+<p align="center">
+  <img src="docs/images/homeassistant-mqtt-discovery-device-example.png" alt="RAM Sensor Example" width="75%">
+</p>
+
+### Manually editing configuration.yaml
+If you'd prefer to add these sensor values manually, you'll need to use the published server MQTT topic. You can reference the [Home Assistant Documentation](https://www.home-assistant.io/integrations/sensor.mqtt/) for their instructions on how to do that. The `state_topic` value will be in the format `komodo/servers/your_server_name`
+
 
 ---
 
@@ -165,10 +176,12 @@ This integration publishes the following topics to your MQTT broker:
 
   ```json
   {
-    "cpu": 12.5,
-    "memPercentage": 45.2,
-    "networkIn": 23.1,
-    "networkOut": 14.6
+    "name": "caddy-internal",
+    "cpu": 2.93,
+    "memPercentage": 5.8,
+    "networkIn": 9.494152,
+    "networkOut": 9.48559,
+    "state": "Ok"
   }
   ```
 
@@ -177,6 +190,8 @@ This integration publishes the following topics to your MQTT broker:
   - `memPercentage`: RAM usage percentage (%)
   - `networkIn`: Network ingress in megabytes (MB)
   - `networkOut`: Network egress in megabytes (MB)
+  - `state`: Status of the server (Ok/NotOK/Disabled)
+  - `name`: Name of server as displayed in Komodo
 
 Messages are published on each update interval for every server discovered via the Komodo API.
 

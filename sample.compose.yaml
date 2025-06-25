@@ -1,0 +1,14 @@
+services:
+  komodo-mqtt:
+    image: ghcr.io/zuhayrali/komodo-mqtt:latest 
+    # Referencing by digest is preferred
+    # image: ghcr.io/zuhayrali/komodo-mqtt@sha256:hash   
+    environment:
+      - KOMODO_URL=${KOMODO_URL}
+      - KOMODO_KEY=${KOMODO_KEY}
+      - KOMODO_SECRET=${KOMODO_SECRET}
+      - MQTT_URL=${MQTT_URL}
+      - MQTT_USER=${MQTT_USER}
+      - MQTT_PASS=${MQTT_PASS}
+      # - UPDATE_INTERVAL= 60 # optional, time to wait between querying Komodo
+      # - UPDATE_HOME_ASSISTANT=true # optional

@@ -1,3 +1,4 @@
+import type { Alert } from "komodo_client/dist/types.js";
 import { komodo } from "./komodo-client.js";
 
 type AlertSummary = {
@@ -6,6 +7,7 @@ type AlertSummary = {
   timestamp: string;
   type?: string;
   data?: any;
+  resolved?: boolean;
 };
 
 type CachedAlert = {
@@ -13,7 +15,17 @@ type CachedAlert = {
   resolved: boolean;
 };
 
+type NotificationData = {
+  type: string;
+  id: string;
+  level: string;
+  data: {
+    name: string;
+  };
+};
+
 const alertCache = new Map<string, CachedAlert>();
+const notifiedResolvedAlertIds = new Set<string>();
 
 function getAlertId(alert: any): string {
   return alert._id?.$oid ?? "";
@@ -33,56 +45,89 @@ function getResolvedAlertIds(currentUnresolvedIds: string[]): string[] {
     .map(([id]) => id);
 }
 
-export async function checkAlertsAndNotify(client: any): Promise<void> {
+export async function initializeResolvedAlertCache(): Promise<void> {
   const all = await komodo.read("ListAlerts", {});
-  const unresolved = all.alerts.filter((a: any) => !a.resolved);
-  const unresolvedIds = getUnresolvedAlertIds(unresolved);
+  const resolved = all.alerts.filter((a: any) => a.resolved);
 
-  const newIds = getNewAlertIds(unresolvedIds);
+  resolved.forEach((alert: any) => {
+    const id = getAlertId(alert);
+    if (id) {
+      notifiedResolvedAlertIds.add(id);
+    }
+  });
+
+  console.log(`✅ Initialized resolved alert cache with ${notifiedResolvedAlertIds.size} items`);
+}
+
+function extractNotificationData(alerts: Alert[], cache: Set<string>): NotificationData[] {
+  const allowedTypes = [
+    "StackAutoUpdated",
+    "StackImageUpdateAvailable",
+    "DeploymentAutoUpdated",
+    "DeploymentImageUpdateAvailable"
+  ];
+
+  const notifyData: NotificationData[] = [];
+
+  for (const alert of alerts) {
+    const id = getAlertId(alert);
+    if (!id || cache.has(id)) continue;
+
+    if (allowedTypes.includes(alert.data?.type)) {
+      const data = alert.data.data as { id: string; name: string };
+      notifyData.push({
+        type: alert.data.type,
+        id: data?.id ?? "",
+        level: "INFO",
+        data: {
+          name: data?.name ?? "",
+        },
+      });
+      cache.add(id);
+    }
+  }
+
+  return notifyData;
+}
+
+async function fetchAlertSummary(id: string, resolved: boolean): Promise<AlertSummary | null> {
+  try {
+    const alert = await komodo.read("GetAlert", { id });
+    alertCache.set(id, { id, resolved });
+
+    return {
+      id,
+      level: resolved ? "RESOLVED" : alert.level,
+      timestamp: new Date(alert.ts).toLocaleString(),
+      type: alert.data?.type,
+      data: alert.data?.data,
+      resolved,
+    };
+  } catch (err) {
+    console.error(`❌ Failed to fetch alert ${id}:`, err);
+    return null;
+  }
+}
+
+export async function getAlertsAndNotify(client: any): Promise<void> {
+  const all = await komodo.read("ListAlerts", {});
+
+  const resolvedAlerts = all.alerts.filter((a: any) => a.resolved);
+  const unresolvedAlerts = all.alerts.filter((a: any) => !a.resolved);
+
+  const resolvedNotificationData = extractNotificationData(resolvedAlerts, notifiedResolvedAlertIds);
+
+  const unresolvedIds = getUnresolvedAlertIds(unresolvedAlerts);
+  const newUnresolvedIds = getNewAlertIds(unresolvedIds);
   const resolvedIds = getResolvedAlertIds(unresolvedIds);
 
-  console.log(`🆕 New alerts: ${newIds.length}, ✅ Resolved alerts: ${resolvedIds.length}`);
+  const numAlert = newUnresolvedIds.length + resolvedNotificationData.length;
+  console.log(`🆕 New alerts: ${numAlert}, ✅ Resolved alerts: ${resolvedIds.length}`);
 
-  const newSummaries = await Promise.all(
-    newIds.map(async (id) => {
-      try {
-        const alert = await komodo.read("GetAlert", { id });
-        alertCache.set(id, { id, resolved: false });
-        return {
-          id,
-          level: alert.level,
-          timestamp: new Date(alert.ts).toLocaleString(),
-          type: alert.data?.type,
-          data: alert.data?.data,
-        };
-      } catch (err) {
-        console.error(`❌ Failed to fetch new alert ${id}:`, err);
-        return null;
-      }
-    })
-  );
+  const newSummaries = await Promise.all(newUnresolvedIds.map(id => fetchAlertSummary(id, false)));
+  const resolvedSummaries = await Promise.all(resolvedIds.map(id => fetchAlertSummary(id, true)));
 
-  const resolvedSummaries = await Promise.all(
-    resolvedIds.map(async (id) => {
-      try {
-        const alert = await komodo.read("GetAlert", { id });
-        alertCache.set(id, { id, resolved: true });
-        return {
-          id,
-          level: 'RESOLVED',
-          timestamp: new Date(alert.ts).toLocaleString(),
-          type: alert.data?.type,
-          data: alert.data?.data,
-          resolved: true,
-        };
-      } catch (err) {
-        console.error(`❌ Failed to fetch resolved alert ${id}:`, err);
-        return null;
-      }
-    })
-  );
-
-  const batch = [...newSummaries, ...resolvedSummaries].filter(Boolean) as AlertSummary[];
+  const batch = [...newSummaries, ...resolvedSummaries, ...resolvedNotificationData].filter(Boolean) as AlertSummary[];
 
   if (batch.length > 0) {
     client.publish("komodo/alerts/batch", JSON.stringify(batch), {

@@ -23,6 +23,6 @@ export const env = {
   mqttPass: getRequiredEnvVar("MQTT_PASS"),
 
   // Optional
-  updateInterval: parseInt(getOptionalEnvVar("UPDATE_INTERVAL", "30"), 10),
+  updateInterval: parseInt(getOptionalEnvVar("UPDATE_INTERVAL", "60"), 10),
   updateHomeAssistant: getOptionalEnvVar("UPDATE_HOME_ASSISTANT", "false") === "true"
 };

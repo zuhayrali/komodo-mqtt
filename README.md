@@ -51,7 +51,7 @@ You will need to have a broker configured in Home Assistant already. If you want
 ## 🐳 Docker
 
 ### (Preferred) Docker Compose 
-A sample compose and env file are provided under `sample.compose.yaml` and `sample.env`. Copy these to `compose.yaml` and `.env` respectively. 
+A sample compose and env file are provided under `samples\sample.compose.yaml` and `samples\sample.env`. Copy these to `compose.yaml` and `.env` respectively. 
 
 ```yaml
 services:

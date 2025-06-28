@@ -7,7 +7,7 @@ Send Komodo server information to MQTT for real-time server monitoring. Automati
 ## 🚀 Features
 
 - Publishes Komodo server CPU, memory, and network stats to MQTT
-- Publishes new and resolved alerts to MQTT
+- Publishes alerts to MQTT (for Home Assistant push notifications)
 - Supports Home Assistant MQTT auto-discovery (opt-in)
 - Example Home Assistant automation included for sending notifications to a configured device 
 
@@ -212,55 +212,40 @@ Messages are published on each update interval for every server discovered via t
 - **Payload Example:**
 
   ```json
-  [
-    {
-      "id": "665f8934329d5d97e7fe438a",
-      "level": "CRITICAL",
-      "timestamp": "2025-06-23 14:42:01",
-      "type": "disk_space_low",
-      "data": {
-        "server": "cm4-3",
-        "volume": "/dev/sda1",
-        "free": "1.2GB"
-      }
-    },
-    {
-      "id": "665f8934329d5d97e7fe438a",
-      "level": "RESOLVED",
-      "timestamp": "2025-06-23 15:12:01",
-      "type": "disk_space_low",
-      "data": {
-        "server": "cm4-3",
-        "volume": "/dev/sda1"
-      },
-      "resolved": true
+  {
+    "type": "ServerCpu",
+    "level": "OK",
+    "resolved": true,
+    "resolved_ts": 1751083170937,
+    "data": {
+      "id": "684258a9ddceb33b566b9cd8",
+      "name": "cm4-3",
+      "region": null,
+      "percentage": 0.8529855012893677
     }
-  ]
+  }
   ```
 
 - **Behavior:**
-  - New alerts are published with full metadata.
+  - New alerts are published in the above format.
+  - All alerts will contain: `type`, `level`, `resolved`, `resolved_ts`. The `data` property is dependent on the `type` of the Alert. If you need to key-off of anything in this property, you'll need to reference the [Komodo API Documentation](https://docs.rs/komodo_client/latest/komodo_client/entities/alert/enum.AlertData.html).
   - When an alert is resolved, a follow-up message is published with the same ID, `level: "RESOLVED"`, and `resolved: true`.
 
-These messages can be used to drive automations in Home Assistant or other systems that consume MQTT events.
+- **Usage:**
+  - These messages can be used to drive automations in Home Assistant or other systems that consume MQTT events.
+  
+  - This is the automation that I use for sending notifications today, you'll need to modify it to be your actual notification target. 
 
-This is the automation that I use for sending notifications today, you'll need to modify it to be your actual notification target. 
-
-```yaml
-alias: Komodo - Push Alerts to Mobile App
-triggers:
-  - topic: komodo/alerts/batch
-    trigger: mqtt
-actions:
-  - repeat:
-      for_each: "{{ alerts }}"
-      sequence:
-        - data:
-            title: Komodo - {{ repeat.item.level }}
-            message: "{{ repeat.item.data.name }} ({{ repeat.item.type }})"
-          action: notify.mobile_app_iphone_16
-variables:
-  alerts: "{{ trigger.payload_json }}"
-```
+  ```yaml
+  alias: Komodo - Push Alert to iPhone
+  triggers:
+    - topic: komodo/alerts
+      trigger: mqtt
+  actions:
+    - data:
+        title: Komodo - {{ trigger.payload_json.level }}
+        message: "{{ trigger.payload_json.data.name }} ({{ trigger.payload_json.type }})"
+      action: notify.mobile_app_iphone_16
+  ```
 
 ---

@@ -4,18 +4,16 @@ tag-template: 'v$NEXT_PATCH_VERSION'
 categories:
   - title: '🚀 Features'
     labels:
-      - 'feat'
+      - 'enhancement'
   - title: '🐛 Bug Fixes'
     labels:
-      - 'fix'
+      - 'bug'
   - title: '🧰 Maintenance'
     labels:
       - 'chore'
-      - 'refactor'
-      - 'build'
   - title: '📝 Documentation'
     labels:
-      - 'docs'
+      - 'documentation'
 
 change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
 

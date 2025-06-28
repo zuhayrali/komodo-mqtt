@@ -1,5 +1,14 @@
-import mqtt from "mqtt";
+import mqtt, { MqttClient } from "mqtt";
+import { publishServerStats } from "./servers.js";
 import { env } from "./env.js";
+
+export type NotifyData = {
+  type: string
+  level: string
+  resolved: boolean
+  resolved_ts: number | undefined
+  data: Record<string, any>
+}
 
 export function createMqttClient() {
   const client = mqtt.connect(env.mqttUrl, {
@@ -16,4 +25,26 @@ export function createMqttClient() {
   });
 
   return client;
+}
+
+export function startStatsPublisher(client: MqttClient) {
+  client.on("connect", () => {
+    console.log("✅ Connected to MQTT broker");
+    setInterval(async () => {
+      try {
+        await publishServerStats(client);
+      } catch (err) {
+        console.error("❌ Error during stats fetch or publish:", err);
+      }
+    }, env.updateInterval * 1000);
+  });
+}
+
+
+export function publishMqttNotification(client: MqttClient, alert: NotifyData) { 
+  client.publish("komodo/alerts", JSON.stringify(alert), {
+      qos: 0,
+      retain: false,
+  });
+  console.log(`📣 Published alert to komodo/alerts/batch`)
 }

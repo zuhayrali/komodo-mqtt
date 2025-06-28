@@ -42,7 +42,7 @@ export function startStatsPublisher(client: MqttClient) {
 
 
 export function publishMqttNotification(client: MqttClient, alert: NotifyData) { 
-  client.publish("komodo/alerts/batch", JSON.stringify(alert), {
+  client.publish("komodo/alerts", JSON.stringify(alert), {
       qos: 0,
       retain: false,
   });

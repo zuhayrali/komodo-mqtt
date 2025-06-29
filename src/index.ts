@@ -10,7 +10,7 @@ app.post('/', async (c) => {
   const alert: Alert = await c.req.json()
 
   const type = alert.data.type;  
-  const data = alert.data.data as Record<string, any>;
+  const data = alert.data.data;
 
   const level = alert.level;
   const resolved = alert.resolved;

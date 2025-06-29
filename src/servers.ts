@@ -2,6 +2,13 @@ import { komodo } from "./komodo-client.js";
 import { publishDiscoveryConfig } from "./homeassistant-discovery.js";
 import { env } from "./env.js";
 
+function normalizeServerName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/gi, "_") // replace non-alphanumeric with _
+    .replace(/^_+|_+$/g, "");     // trim leading/trailing underscores
+}
+
 function formatStats(stackName: string, res: any) {
   const cpu = Number.isFinite(res.cpu_perc) ? parseFloat(res.cpu_perc.toFixed(2)) : null;
   const memPercentage =
@@ -39,7 +46,7 @@ export async function publishServerStats(client: any) {
           state: serverStates.status,
         };
 
-        const serverName = server.name.split(" ")[0];
+        const serverName = normalizeServerName(server.name);
 
         client.publish(`komodo/servers/${serverName}`, JSON.stringify(stat), {
           qos: 0,

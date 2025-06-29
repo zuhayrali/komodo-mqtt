@@ -206,7 +206,7 @@ Messages are published on each update interval for every server discovered via t
 
 - **Topic:**
   ```
-  komodo/alerts/batch
+  komodo/alerts
   ```
 
 - **Payload Example:**

@@ -46,5 +46,5 @@ export function publishMqttNotification(client: MqttClient, alert: NotifyData) {
       qos: 0,
       retain: false,
   });
-  console.log(`📣 Published alert to komodo/alerts/batch`)
+  console.log(`📣 Published alert to komodo/alerts`)
 }

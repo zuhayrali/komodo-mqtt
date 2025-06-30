@@ -67,7 +67,7 @@ export function publishDiscoveryConfig(
     if (payloadStr !== lastPayload) {
       client.publish(topic, payloadStr, { retain: true, qos: 0 });
       lastPublishedConfigs.set(topic, payloadStr);
-      console.log(`✅ Published discovery config for ${sensor.name}`);
+      console.log(`✅ Published ${serverName} discovery config for ${sensor.name}`);
     }
   });
 }

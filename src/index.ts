@@ -2,6 +2,7 @@ import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { createMqttClient, publishMqttNotification, startStatsPublisher, type NotifyData } from './mqtt-client.js';
 import type { Alert } from 'komodo_client/dist/types.js';
+import { env } from "./env.js";
 
 const app = new Hono()
 const client = createMqttClient();
@@ -32,7 +33,7 @@ app.post('/', async (c) => {
 
 const server = serve({
   fetch: app.fetch,
-  port: 3434,
+  port: env.port,
   hostname: '0.0.0.0'
 }, (info) => {
   startStatsPublisher(client);

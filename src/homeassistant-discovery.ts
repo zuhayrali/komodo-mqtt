@@ -1,4 +1,4 @@
-import mqtt, { MqttClient } from "mqtt";
+import type { MqttClient } from "mqtt";
 
 const lastPublishedConfigs = new Map<string, string>();
 
@@ -9,59 +9,65 @@ export function publishDiscoveryConfig(
 ) {
   if (!options.enabled) return;
 
-  const baseTopic = `homeassistant/sensor/komodo/${serverName}`;
+  const baseTopic = `homeassistant/sensor/komodo_${serverName}`;
+  const stateTopic = `komodo/servers/${serverName}`;
+
+  const deviceInfo = {
+    identifiers: [`komodo_${serverName}`],
+    name: `Komodo ${serverName}`,
+    manufacturer: "Komodo",
+    model: "Server Monitor",
+    sw_version: "1.0.0",
+  };
 
   const sensors = [
     {
-      name: `${serverName} CPU Usage`,
-      object_id: `${serverName}_cpu`,
+      name: "CPU Usage",
+      key: "cpu",
       value_template: "{{ value_json.cpu }}",
-      unit_of_measurement: "%",
+      unit: "%",
     },
     {
-      name: `${serverName} RAM Usage`,
-      object_id: `${serverName}_ram`,
+      name: "RAM Usage",
+      key: "ram",
       value_template: "{{ value_json.memPercentage }}",
-      unit_of_measurement: "%",
+      unit: "%",
     },
     {
-      name: `${serverName} Network In`,
-      object_id: `${serverName}_net_in`,
+      name: "Network In",
+      key: "netin",
       value_template: "{{ value_json.networkIn }}",
-      unit_of_measurement: "MB",
+      unit: "MB",
     },
     {
-      name: `${serverName} Network Out`,
-      object_id: `${serverName}_net_out`,
+      name: "Network Out",
+      key: "netout",
       value_template: "{{ value_json.networkOut }}",
-      unit_of_measurement: "MB",
+      unit: "MB",
     },
   ];
 
   sensors.forEach(sensor => {
-    const suffix = sensor.object_id.split("_").pop();
-    const topic = `${baseTopic}_${suffix}/config`;
+    const topic = `${baseTopic}/${sensor.key}/config`;
+    const objectId = `komodo_${serverName}_${sensor.key}`;
 
     const payload = {
-      name: sensor.name,
-      object_id: sensor.object_id,
-      state_topic: `komodo/servers/${serverName}`,
+      name: `${serverName} ${sensor.name}`,
+      object_id: objectId,
+      state_topic: stateTopic,
       value_template: sensor.value_template,
-      unique_id: sensor.object_id,
-      device: {
-        identifiers: [`komodo_${serverName}`],
-        name: `komodo_${serverName}`,
-      },
-      unit_of_measurement: sensor.unit_of_measurement,
+      unique_id: objectId,
+      unit_of_measurement: sensor.unit,
+      device: deviceInfo,
     };
 
     const payloadStr = JSON.stringify(payload);
     const lastPayload = lastPublishedConfigs.get(topic);
 
-    if (lastPayload !== payloadStr) {
+    if (payloadStr !== lastPayload) {
       client.publish(topic, payloadStr, { retain: true, qos: 0 });
       lastPublishedConfigs.set(topic, payloadStr);
-      console.log(`🔄 Published discovery config to ${topic}`);
-    } 
+      console.log(`✅ Published discovery config for ${sensor.name}`);
+    }
   });
 }

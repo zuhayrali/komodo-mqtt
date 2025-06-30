@@ -58,7 +58,9 @@ services:
   komodo-mqtt:
     image: ghcr.io/zuhayrali/komodo-mqtt:latest 
     # Referencing by digest is preferred
-    # image: ghcr.io/zuhayrali/komodo-mqtt@sha256:hash   
+    # image: ghcr.io/zuhayrali/komodo-mqtt@sha256:hash
+    ports:
+      - 3434:3434   
     environment:
       - KOMODO_URL=${KOMODO_URL}
       - KOMODO_KEY=${KOMODO_KEY}
@@ -69,6 +71,34 @@ services:
       # - UPDATE_INTERVAL= 60 # optional, time to wait in seconds between querying Komodo
       # - UPDATE_HOME_ASSISTANT=true # optional, when true, sensor values will be updated in homeassistant through MQTT discovery
 ```
+
+Docker secrets are also supported: 
+
+```yaml
+services:
+  komodo-mqtt:
+    image: ghcr.io/zuhayrali/komodo-mqtt:latest
+    ports:
+      - 3434:3434
+    environment:
+      - KOMODO_URL=https://komodo.dotcomma.xyz
+      - KOMODO_KEY=${KOMODO_KEY}
+      - MQTT_URL=${MQTT_URL}
+      - MQTT_USER=${MQTT_USER}
+      - UPDATE_INTERVAL=${UPDATE_INTERVAL} 
+      - UPDATE_HOME_ASSISTANT=true
+    secrets:
+      - KOMODO_SECRET
+      - MQTT_PASS
+
+secrets:
+  KOMODO_SECRET: 
+    file: YOUR_FILE_PATH/komodo_secret.txt
+  MQTT_PASS:
+    file: YOUR_FILE_PATH/mqtt_password.txt
+```
+
+
 
 ### Environment Variables
 
@@ -83,6 +113,7 @@ services:
 | MQTT_PASS             | Password for your MQTT broker                                              | y        | —       | mqtt_password                |
 | UPDATE_INTERVAL       | Interval in seconds between querying Komodo for updates                    | n        | 60      | 120                          |
 | UPDATE_HOME_ASSISTANT | Flag to send sensor data to Home Assistant via MQTT discovery (true/false) | n        | false   | true                         |
+| PORT | Port you'd like the notification endpoint to run on | n        | 3434   | 43123                         |
 
 After modifying your environment variables, start the container: `docker compose up -d`.  
 
@@ -92,14 +123,14 @@ After modifying your environment variables, start the container: `docker compose
 
 ```bash
 docker build -t komodo-mqtt .
-docker run -d --env-file .env komodo-mqtt
+docker run -d -p 3434:3434 --env-file .env komodo-mqtt
 ```
 
 ### Use From GitHub Container Registry
 
 ```bash
 docker pull ghcr.io/zuhayrali/komodo-mqtt:latest
-docker run -d --env-file .env ghcr.io/zuhayrali/komodo-mqtt:latest
+docker run -d -p 3434:3434 --env-file .env ghcr.io/zuhayrali/komodo-mqtt:latest
 ```
 
 To use a specific digest:
@@ -110,14 +141,14 @@ docker pull ghcr.io/zuhayrali/komodo-mqtt@sha256:<digest>
 
 ---
 
-## 🏠 Home Assistant Integration
-
-### Using MQTT Discovery
+## 🏠 Home Assistant MQTT Discovery
+> [!CAUTION]
+> This integration has only been tested on my personal Home Assistant installation. While nothing bad *should* happen, it's strongly recommended to create a backup of your Home Assistant instance before enabling MQTT discovery.
 
 If `UPDATE_HOME_ASSISTANT=true`, MQTT discovery messages are published under:
 
 ```
-homeassistant/sensor/komodo/<server>_<metric>
+homeassistant/sensor/komodo_{SERVER_NAME}
 ```
 
 Metrics include:

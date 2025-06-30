@@ -141,14 +141,14 @@ docker pull ghcr.io/zuhayrali/komodo-mqtt@sha256:<digest>
 
 ---
 
-## 🏠 Home Assistant Integration
-
-### Using MQTT Discovery
+## 🏠 Home Assistant MQTT Discovery
+> [!CAUTION]
+> This integration has only been tested on my personal Home Assistant installation. While nothing bad *should* happen, it's strongly recommended to create a backup of your Home Assistant instance before enabling MQTT discovery.
 
 If `UPDATE_HOME_ASSISTANT=true`, MQTT discovery messages are published under:
 
 ```
-homeassistant/sensor/komodo/<server>_<metric>
+homeassistant/sensor/komodo_{SERVER_NAME}
 ```
 
 Metrics include:

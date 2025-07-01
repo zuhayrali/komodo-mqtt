@@ -37,5 +37,5 @@ export const env = {
   // Optional
   updateInterval: parseInt(getOptionalEnvVar("UPDATE_INTERVAL", "60"), 10),
   updateHomeAssistant: getOptionalEnvVar("UPDATE_HOME_ASSISTANT", "false") === "true",
-  port: parseInt(getOptionalEnvVar("PORT", "3434"), 10),
+  port: parseInt(getOptionalEnvVar("KOMODO_MQTT_PORT", "3434"), 10),
 };

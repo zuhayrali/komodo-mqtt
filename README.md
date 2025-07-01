@@ -113,7 +113,7 @@ secrets:
 | MQTT_PASS             | Password for your MQTT broker                                              | y        | —       | mqtt_password                |
 | UPDATE_INTERVAL       | Interval in seconds between querying Komodo for updates                    | n        | 60      | 120                          |
 | UPDATE_HOME_ASSISTANT | Flag to send sensor data to Home Assistant via MQTT discovery (true/false) | n        | false   | true                         |
-| PORT | Port you'd like the notification endpoint to run on | n        | 3434   | 43123                         |
+| KOMODO_MQTT_PORT | Port you'd like the notification endpoint to run on | n        | 3434   | 43123                         |
 
 After modifying your environment variables, start the container: `docker compose up -d`.  
 
@@ -160,29 +160,30 @@ Metrics include:
 For a server named `ooga` you would have access to: 
 - `ooga_cpu`
 - `ooga_ram`
-- `ooga_net_in`
-- `ooga_net_out` 
-
-If your server name is separated by spaces, ex: `ooga booga`, then the MQTT sensor base name will be `ooga`.
-
+- `ooga_netin`
+- `ooga_netout` 
 
 
 ### Example Discovery Payload
 
 ```json
 {
-  "name": "CPU Usage",
-  "object_id": "ooga_cpu",
-  "state_topic": "komodo/servers/ooga",
+  "name": "server_6ccu7 CPU Usage",
+  "object_id": "komodo_server_6ccu7_cpu",
+  "state_topic": "komodo/servers/server_6ccu7",
   "value_template": "{{ value_json.cpu }}",
-  "unique_id": "ooga_cpu",
+  "unique_id": "komodo_server_6ccu7_cpu",
+  "unit_of_measurement": "%",
   "device": {
-    "identifiers": ["ooga"],
-    "name": "ooga"
-  },
-  "unit_of_measurement": "%"
+    "identifiers": [
+      "komodo_server_6ccu7"
+    ],
+    "name": "Komodo server_6ccu7",
+    "manufacturer": "Komodo",
+    "model": "Server Monitor",
+    "sw_version": "1.0.0"
+  }
 }
-
 ```
 
 Created servers can be accessed as devices under MQTT in Home Assistant in the format `komodo_serverName`
@@ -260,11 +261,9 @@ Messages are published on each update interval for every server discovered via t
 - **Behavior:**
   - New alerts are published in the above format.
   - All alerts will contain: `type`, `level`, `resolved`, `resolved_ts`. The `data` property is dependent on the `type` of the Alert. If you need to key-off of anything in this property, you'll need to reference the [Komodo API Documentation](https://docs.rs/komodo_client/latest/komodo_client/entities/alert/enum.AlertData.html).
-  - When an alert is resolved, a follow-up message is published with the same ID, `level: "RESOLVED"`, and `resolved: true`.
 
 - **Usage:**
-  - These messages can be used to drive automations in Home Assistant or other systems that consume MQTT events.
-  
+  - These messages can be used to drive automations in Home Assistant or other systems that consume MQTT events.  
   - This is the automation that I use for sending notifications today, you'll need to modify it to be your actual notification target. 
 
   ```yaml

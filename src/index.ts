@@ -1,6 +1,6 @@
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
-import { createMqttClient, publishMqttNotification, startStatsPublisher, type NotifyData } from './mqtt-client.js';
+import { alertSummary, createMqttClient, publishMqttNotification, startStatsPublisher, type NotifyData } from './mqtt-client.js';
 import type { Alert } from 'komodo_client/dist/types.js';
 import { env } from "./env.js";
 
@@ -17,12 +17,15 @@ app.post('/', async (c) => {
   const resolved = alert.resolved;
   const resolved_ts = alert.resolved_ts;
   
+  const alertMessage = alertSummary(alert)
+  
   const notify: NotifyData = {
     type,
     level,
     resolved,
     resolved_ts,
     data, 
+    alertMessage
   };
 
   publishMqttNotification(client, notify)

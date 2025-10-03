@@ -11,7 +11,7 @@
     "dotenv": "^17.2.3",
     "hono": "^4.9.9",
     "komodo_client": "^1.19.5",
-    "mqtt": "^5.13.1"
+    "mqtt": "^5.14.1"
   },
   "devDependencies": {
     "@types/node": "^20.11.17",

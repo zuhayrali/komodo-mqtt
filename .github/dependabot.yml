@@ -1,0 +1,11 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/" # root has package.json
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "docker"
+    directory: "/" # root has Dockerfile
+    schedule:
+      interval: "weekly"
